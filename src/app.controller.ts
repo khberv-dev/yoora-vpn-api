@@ -33,21 +33,22 @@ export class AppController {
     const keys = this.cryptService.generateKeys();
     const nextIp = ((await this.cache.get('next')) ?? 2) as number;
     let userIp = (await this.cache.get(`user:ip:${userId}`)) as number;
+    const userKey = (await this.cache.get(`user:key:${userId}`)) as string;
 
     if (!userIp) {
       userIp = nextIp;
+      await this.wgProcess.removePeer(userKey);
       await this.cache.set(`user:ip:${userId}`, nextIp);
       await this.cache.set(`user:key:${userId}`, keys.public);
       await this.cache.set('next', nextIp + 1);
     }
 
-    await this.wgProcess.removePeer(keys.public);
     await this.wgProcess.addPeer(keys.public, `10.0.0.${userIp}`);
 
     return {
       ...keys,
       ip: `10.0.0.${userIp}/32`,
-      serverPublicKey
+      serverPublicKey,
     };
   }
 }
