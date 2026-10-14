@@ -1,105 +1,124 @@
-# Yoora VPN API
+<p align="center">
+  <a href="http://nestjs.com/" target="_blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
+</p>
 
-NestJS control API for allocating client IPs and adding WireGuard peers on the local server.
+[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
+[circleci-url]: https://circleci.com/gh/nestjs/nest
 
-## Setup
+  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
+    <p align="center">
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/core.svg" alt="NPM Downloads" /></a>
+<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
+<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
+<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
+<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
+  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
+    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
+  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
+</p>
+  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
+  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
-```sh
-npm install
-cp .env.example .env
-# Set WG_API_KEY to a nonempty API key (no minimum length).
-npm run build
-node --env-file=.env dist/main.js
+## Description
+
+[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+
+## Project setup
+
+```bash
+$ npm install
 ```
 
-The API listens on port 8000. The public health endpoint is `GET /`.
+## Compile and run the project
 
-The host must have `wg` and `wg-quick` installed, with `wg0` already running at `10.0.0.1/24`. The API process needs permission to inspect/configure that interface and save `/etc/wireguard/wg0.conf`. Configure server forwarding, firewall rules and NAT separately if clients need internet access. Set up the interface to start on boot using its saved configuration. Use HTTPS when exposing the API remotely.
+```bash
+# development
+$ npm run start
 
-Environment variables:
+# watch mode
+$ npm run start:dev
 
-| Variable          | Default                 | Meaning                                                 |
-| ----------------- | ----------------------- | ------------------------------------------------------- |
-| `WG_API_KEY`      | Required                | Nonempty key supplied as `x-api-key`; no minimum length |
-| `WG_INTERFACE`    | `wg0`                   | Existing WireGuard interface                            |
-| `WG_STATE_FILE`   | `./data/wireguard.json` | Persistent reservations; keep on durable local storage  |
-| `WG_BINARY`       | `wg`                    | WireGuard executable path                               |
-| `WG_QUICK_BINARY` | `wg-quick`              | Configuration persistence executable path               |
-
-Node loads `.env` with `--env-file`; Nest's start scripts require these variables to be exported in the environment.
-
-## Allocate an IP
-
-`POST /wireguard/ip-allocations` reserves an IP for a public key without adding a peer. Allocation is optional: joining also allocates automatically.
-
-```sh
-curl -X POST http://localhost:8000/wireguard/ip-allocations \
-  -H "x-api-key: $WG_API_KEY" \
-  -H 'Content-Type: application/json' \
-  -d '{"publicKey":"YOUR_CLIENT_PUBLIC_KEY"}'
+# production mode
+$ npm run start:prod
 ```
 
-The requested `10.0.0.255` pool boundary is interpreted as subnet `10.0.0.0/24`, with subnet mask `255.255.255.0`. Clients receive `10.0.0.2` through `10.0.0.254` (253 addresses). `.0` is the network address, `.1` belongs to the server, and `.255` is broadcast.
+## Run tests
 
-Allocations are tied to public keys and do not expire. Repeating a request returns the same address. Caller-selected IPs and additional fields are rejected. Client keys must be canonical base64-encoded, nonzero 32-byte public keys. Generate keys on the client; do not send private keys to this API.
+```bash
+# unit tests
+$ npm run test
 
-## Add a client / join
+# e2e tests
+$ npm run test:e2e
 
-`POST /wireguard/clients` and `POST /wireguard/join` run the same operation:
-
-```sh
-curl -X POST http://localhost:8000/wireguard/join \
-  -H "x-api-key: $WG_API_KEY" \
-  -H 'Content-Type: application/json' \
-  -d '{"publicKey":"YOUR_CLIENT_PUBLIC_KEY"}'
+# test coverage
+$ npm run test:cov
 ```
 
-The service checks live peers, reserves a free IP, then invokes these commands with an argument array and no shell:
+## Deployment
 
-```sh
-wg show wg0 allowed-ips
-wg set wg0 peer CLIENT_PUBLIC_KEY allowed-ips 10.0.0.2/32
-wg-quick save wg0
+When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+
+If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+
+```bash
+$ npm install -g @nestjs/mau
+$ mau deploy
 ```
 
-See the [official WireGuard command reference](https://git.zx2c4.com/wireguard-tools/about/src/man/wg.8) and [wg-quick reference](https://git.zx2c4.com/wireguard-tools/about/src/man/wg-quick.8).
+With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
 
-Successful responses (HTTP 201):
+## Observability
 
-```json
-{
-  "publicKey": "CLIENT_PUBLIC_KEY",
-  "ip": "10.0.0.2",
-  "status": "active",
-  "interface": "wg0",
-  "address": "10.0.0.2/32",
-  "subnet": "10.0.0.0/24"
-}
+In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.
+
+[NestJS Observe](https://observe.nestjs.com) automatically instruments your NestJS application, giving you deep visibility into your system with minimal setup:
+
+- **Distributed tracing:** Follow requests across services and understand how they flow through your system.
+- **Waterfall analysis:** Visualize request execution and identify slow operations, bottlenecks, and unexpected delays.
+- **Performance analysis:** Analyze application performance in real time and quickly pinpoint areas that need optimization.
+- **Metrics:** Track key application and infrastructure metrics to understand system health and performance trends.
+- **Logging:** Centralize and correlate logs with traces and other telemetry to make debugging easier.
+- **Error tracking:** Detect errors quickly and investigate their root causes with the surrounding context.
+- **SLA monitoring:** Track service-level objectives and identify when your application is approaching or exceeding defined thresholds.
+- **Alarms and alerts:** Set up alerts for critical errors, performance degradation, SLA violations, and other anomalies so your team can react quickly.
+
+To add it to this project:
+
+```bash
+$ npm install @nestjs/observe
 ```
 
-Allocation returns `reserved` until a join completes; an already active allocation retains its stored status. `active` means a successful join was recorded, not that a client has completed a handshake or remains connected. Configure the client's private key, returned address, server public key, endpoint and desired routes on the client separately.
+Then follow the [setup guide](https://docs.nestjs.com/observability/overview) - it takes a single import and an app key.
 
-Repeated joins reuse the IP and leave an existing matching peer unchanged. Configuration saving is retried even when the peer already exists. Existing peers with multiple routes or addresses outside this pool are rejected rather than modified. Allocations also avoid addresses covered by other live peers' IPv4 CIDR ranges.
+The free plan needs no payment details and covers 300,000 events a month. You can also browse the [live demo](https://www.observe-demo.nestjs.com/dashboard) first - it takes less than a minute and requires no signup.
 
-All WireGuard endpoints require the matching `x-api-key` header. The application refuses to start when `WG_API_KEY` is unset or empty.
+## Resources
 
-Errors: `400` invalid input, `401` invalid/missing API key, `409` pool exhausted or conflicting peer assignment, `503` WireGuard or allocation storage unavailable.
+Check out a few resources that may come in handy when working with NestJS:
 
-## Persistence and concurrency
+- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
+- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
+- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
+- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
+- Automatically instrument your application with [NestJS Observe](https://observe.nestjs.com). Distributed tracing, metrics, and logging made easy. Error tracking and performance monitoring for your NestJS applications.
+- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
+- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
+- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
+- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
 
-Reservations are written atomically before configuring peers. If adding a peer or saving the WireGuard configuration fails, its IP stays reserved. Retry the join with the same public key to finish; this also handles a command timeout after the peer may have been applied. A failed save may leave a live peer active but not yet saved for restart.
+## Support
 
-Use one API deployment per interface with a durable state file. In-process requests are serialized, and an exclusive filesystem lock prevents overlapping operations by processes sharing that file; a competing process receives `503` and can retry. Do not run independent deployments with separate state files for the same interface or modify peers concurrently through another control tool.
+Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
 
-After a process crash, a `.lock` file may remain. Stop all API instances, confirm no operation is running, then remove only the stale lock before restarting. Preserve the JSON state file and WireGuard configuration. Corrupt or inconsistent state is rejected to avoid reusing allocated IPs. There is no release/delete endpoint in this implementation.
+## Stay in touch
 
-## Validation
+- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
+- Website - [https://nestjs.com](https://nestjs.com/)
+- Twitter - [@nestframework](https://twitter.com/nestframework)
 
-```sh
-npm run build
-npm test
-npm run test:e2e
-npm run lint
-```
+## License
 
-Tests mock WireGuard commands and use temporary state directories; they do not alter the host VPN. HTTP integration tests require permission to bind a local socket.
+Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
