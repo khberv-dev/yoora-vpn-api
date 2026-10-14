@@ -39,9 +39,10 @@ export class AppController {
       await this.cache.set(`user:ip:${userId}`, nextIp);
       await this.cache.set(`user:key:${userId}`, keys.public);
       await this.cache.set('next', nextIp + 1);
-
-      await this.wgProcess.addPeer(keys.public, `10.0.0.${userIp}`);
     }
+
+    await this.wgProcess.removePeer(keys.public);
+    await this.wgProcess.addPeer(keys.public, `10.0.0.${userIp}`);
 
     return {
       ...keys,
