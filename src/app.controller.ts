@@ -27,6 +27,7 @@ export class AppController {
 
   @Post('connection')
   async generateKeyPair(@Query('user') userId: string) {
+    const serverPublicKey = 'jBzAa1D/KVBgvL0kGgm2WKoz4uSYqs/DGnliK3KDJns=';
     if (!userId) return new BadRequestException('userId is required');
 
     const keys = this.cryptService.generateKeys();
@@ -39,12 +40,13 @@ export class AppController {
       await this.cache.set(`user:key:${userId}`, keys.public);
       await this.cache.set('next', nextIp + 1);
 
-      await this.wgProcess.addPeer(keys.public, `10.0.0.${userIp}`);
+      await this.wgProcess.addPeer(keys.public, `10.0.0.${userIp}/32`);
     }
 
     return {
-      keys,
-      ip: `10.0.0.${userIp}`,
+      ...keys,
+      ip: `10.0.0.${userIp}/32`,
+      serverPublicKey
     };
   }
 }
