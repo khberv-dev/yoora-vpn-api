@@ -35,7 +35,7 @@ export class AppController {
     let userIp = (await this.cache.get(`user:ip:${userId}`)) as number;
     const userKey = (await this.cache.get(`user:key:${userId}`)) as string | null;
 
-    if (!userKey) {
+    if (userKey) {
       await this.wgProcess.removePeer(userKey!);
     }
 
