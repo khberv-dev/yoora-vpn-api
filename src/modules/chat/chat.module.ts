@@ -23,5 +23,6 @@ import { ChatGateway } from './gateways/chat.gateway.js';
   ],
   controllers: [ChatController],
   providers: [ChatService, ChatGateway],
+  exports: [ChatService],
 })
 export class ChatModule {}

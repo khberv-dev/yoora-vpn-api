@@ -1,13 +1,13 @@
 import { BadRequestException } from '@nestjs/common';
 import { mkdirSync } from 'node:fs';
 import { unlink } from 'node:fs/promises';
-import { extname, join, resolve } from 'node:path';
+import { extname, join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { diskStorage } from 'multer';
 import type { MulterOptions } from '@nestjs/platform-express/multer/interfaces/multer-options.interface.js';
 import { MessageType } from '../enum/message-type.enum.js';
+import { UPLOADS_ROOT } from '../../../shared/config/upload.config.js';
 
-export const UPLOADS_ROOT = resolve('uploads');
 export const CHAT_FOLDER = 'chat';
 export const CHAT_FILE_MAX_BYTES = 500 * 1024 * 1024;
 
@@ -36,11 +36,14 @@ export const chatFileOptions: MulterOptions = {
   },
 };
 
+const CHAT_FILE_PATH_RE = new RegExp(
+  `^${CHAT_FOLDER}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(\\.[a-z0-9]+)?$`,
+);
+
+export const isChatFilePath = (path: string) => CHAT_FILE_PATH_RE.test(path);
+
 export const toChatFilePath = (filename: string) =>
   `${CHAT_FOLDER}/${filename}`;
-
-export const resolveUploadPath = (filePath: string) =>
-  join(UPLOADS_ROOT, filePath);
 
 export async function removeUploadedFile(file?: Express.Multer.File) {
   if (file) await unlink(file.path).catch(() => undefined);

@@ -14,7 +14,6 @@ import { MessageStatus } from '../enum/message-status.enum.js';
 import { CreateRoomDto } from '../dto/create-room.dto.js';
 import {
   messageTypeForMime,
-  resolveUploadPath,
   toChatFilePath,
 } from '../storage/chat-file.storage.js';
 import {
@@ -193,18 +192,12 @@ export class ChatService {
     };
   }
 
-  async getMessageFile(userId: string, messageId: string) {
+  async canAccessFile(userId: string, filePath: string): Promise<boolean> {
     const message = await this.messageRepo.findOne({
-      where: { id: messageId },
+      where: { filePath },
       relations: { chatRoom: true },
+      select: { id: true, chatRoom: { id: true } },
     });
-    if (!message?.filePath) throw new NotFoundException('File not found');
-    await this.assertMember(userId, message.chatRoom.id);
-
-    return {
-      path: resolveUploadPath(message.filePath),
-      fileName: message.fileName ?? message.filePath,
-      mimeType: message.fileMimeType,
-    };
+    return !!message && this.isMember(userId, message.chatRoom.id);
   }
 }

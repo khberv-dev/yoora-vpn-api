@@ -1,9 +1,10 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module.js';
 import { ConfigService } from '@nestjs/config';
-import { Logger } from '@nestjs/common';
+import { Logger, RequestMethod } from '@nestjs/common';
 import { validationPipe } from './common/pipes/validation.pipe.js';
 import { getEnvironment } from './shared/config/environment.config.js';
+import { PUBLIC_PREFIX } from './shared/config/upload.config.js';
 
 const logger = new Logger('App');
 
@@ -13,7 +14,9 @@ async function bootstrap() {
   const port = config.getOrThrow<number>('PORT');
   const apiPrefix = `v${config.getOrThrow<string>('API_VERSION')}`;
 
-  app.setGlobalPrefix(apiPrefix);
+  app.setGlobalPrefix(apiPrefix, {
+    exclude: [{ path: `${PUBLIC_PREFIX}/*path`, method: RequestMethod.GET }],
+  });
   app.enableCors();
   app.enableShutdownHooks();
   app.useGlobalPipes(validationPipe);

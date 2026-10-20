@@ -6,12 +6,10 @@ import {
   ParseUUIDPipe,
   Post,
   Query,
-  Res,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import type { Response } from 'express';
 import { ChatService } from '../services/chat.service.js';
 import { ChatGateway } from '../gateways/chat.gateway.js';
 import { CreateRoomDto } from '../dto/create-room.dto.js';
@@ -79,16 +77,5 @@ export class ChatController {
     );
     this.chatGateway.emitRead(roomId, user.id, readIds);
     return page;
-  }
-
-  @Get('messages/:id/file')
-  async getMessageFile(
-    @CurrentUser() user: User,
-    @Param('id', ParseUUIDPipe) messageId: string,
-    @Res() res: Response,
-  ) {
-    const file = await this.chatService.getMessageFile(user.id, messageId);
-    if (file.mimeType) res.type(file.mimeType);
-    res.sendFile(file.path, { dotfiles: 'deny' });
   }
 }

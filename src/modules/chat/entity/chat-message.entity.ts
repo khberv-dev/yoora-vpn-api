@@ -42,6 +42,7 @@ export class ChatMessage {
   @Column({ type: 'text', nullable: true })
   text: string | null;
 
+  @Index()
   @Column({ type: 'varchar', nullable: true })
   filePath: string | null;
 
