@@ -1,20 +1,36 @@
 import { Module } from '@nestjs/common';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { AppController } from './app.controller.js';
 import { CryptModule } from './modules/crypt/crypt.module.js';
 import { CacheModule } from '@nestjs/cache-manager';
-import { SystemModule } from './modules/system/system.module.js';
 import { ConfigModule } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { dataSource } from './shared/config/database.config.js';
+import { AuthModule } from './modules/auth/auth.module.js';
+import { UserModule } from './modules/user/user.module.js';
+import { CoreModule } from './modules/core/core.module.js';
+import { JwtAccessGuard } from './common/guards/jwt-access.guard.js';
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor.js';
+import { ApiErrorLoggingFilter } from './common/filters/api-error-logging.filter.js';
 
 @Module({
   imports: [
+    TypeOrmModule.forRoot(dataSource.options),
     CacheModule.register({
       isGlobal: true,
       ttl: 0,
     }),
-    ConfigModule.forRoot(),
+    ConfigModule.forRoot({ isGlobal: true }),
     CryptModule,
-    SystemModule,
+    AuthModule,
+    UserModule,
+    CoreModule,
   ],
   controllers: [AppController],
+  providers: [
+    { provide: APP_FILTER, useClass: ApiErrorLoggingFilter },
+    { provide: APP_GUARD, useClass: JwtAccessGuard },
+    { provide: APP_INTERCEPTOR, useClass: LoggingInterceptor },
+  ],
 })
 export class AppModule {}
