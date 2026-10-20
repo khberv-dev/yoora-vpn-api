@@ -11,13 +11,16 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const config = app.get(ConfigService);
   const port = config.getOrThrow<number>('PORT');
+  const apiPrefix = `v${config.getOrThrow<string>('API_VERSION')}`;
 
+  app.setGlobalPrefix(apiPrefix);
   app.enableCors();
   app.enableShutdownHooks();
   app.useGlobalPipes(validationPipe);
 
   await app.listen(port);
   logger.log(`Environment: ${getEnvironment(config)}`);
+  logger.log(`API prefix: /${apiPrefix}`);
   logger.log(`Listening on :${port}`);
 }
 await bootstrap();

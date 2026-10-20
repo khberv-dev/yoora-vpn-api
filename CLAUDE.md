@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A NestJS 12 + TypeORM + PostgreSQL API for a VPN. It has user accounts with JWT auth, and it provisions AmneziaWG (WireGuard fork) peers: `POST /connection?user=<id>` generates an x25519 key pair, assigns the user a tunnel IP, registers the peer on the host's `wg0` interface by shelling out to `awg`, and returns the client config pieces (private/public key, `10.0.0.N/32`, server public key).
+A NestJS 12 + TypeORM + PostgreSQL API for a VPN. It has user accounts with JWT auth, and it provisions AmneziaWG (WireGuard fork) peers: `POST /v1/connection` (for the authenticated user) generates an x25519 key pair, assigns the user a tunnel IP, registers the peer on the host's `wg0` interface by shelling out to `awg`, and returns the client config pieces (private/public key, `10.0.0.N/32`, server public key).
 
 Structure follows the sibling project `../learning-platform-api` (`common/`, `shared/config`, per-module `controllers/ dto/ entity/ services/ strategies/ utils/` subfolders), except feature modules live in `src/modules` rather than `src/core`, and imports are relative (no `@/` alias).
 
@@ -31,7 +31,7 @@ There are currently no tests.
 
 ## Environment
 
-`.env.example` is the source of truth: `PORT`, `ENVIRONMENT` (`DEVELOPMENT` | `DEPLOYMENT`, anything else resolves to `DEPLOYMENT`), `JWT_ACCESS_SECRET`/`JWT_ACCESS_EXPIRE` (`1d`), `JWT_REFRESH_SECRET`/`JWT_REFRESH_EXPIRE` (`30d`), `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`, `DB_DATABASE`.
+`.env.example` is the source of truth: `PORT`, `API_VERSION` (required; routes are served under `/v{API_VERSION}`), `ENVIRONMENT` (`DEVELOPMENT` | `DEPLOYMENT`, anything else resolves to `DEPLOYMENT`), `JWT_ACCESS_SECRET`/`JWT_ACCESS_EXPIRE` (`1d`), `JWT_REFRESH_SECRET`/`JWT_REFRESH_EXPIRE` (`30d`), `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`, `DB_DATABASE`.
 
 - TypeORM `synchronize` is on only in `DEVELOPMENT`. Pending migrations in `migrations/` always run on startup (`migrationsRun`), before sync. Deployment schema changes must be captured in a migration.
 - The DataSource (`src/shared/config/database.config.ts`, also used by the TypeORM CLI) loads entities from `dist/**/*.entity.js` and migrations from `dist/migrations/*.js`, so the app must be built (or running under `nest start`) before the DB is usable.
@@ -40,7 +40,7 @@ There are currently no tests.
 
 ## Architecture
 
-**Global wiring (`app.module.ts`, `main.ts`).** `JwtAccessGuard` is a global `APP_GUARD`, so every route requires a valid access token unless marked `@Public()`. A global `ValidationPipe` uses `whitelist` + `forbidNonWhitelisted`, so unknown body fields are 400s. `ApiErrorLoggingFilter` logs every failed request in all environments, with body and headers **unredacted**. `LoggingInterceptor` logs all requests and responses, in `DEVELOPMENT` only. There is no global route prefix.
+**Global wiring (`app.module.ts`, `main.ts`).** `JwtAccessGuard` is a global `APP_GUARD`, so every route requires a valid access token unless marked `@Public()`. A global `ValidationPipe` uses `whitelist` + `forbidNonWhitelisted`, so unknown body fields are 400s. `ApiErrorLoggingFilter` logs every failed request in all environments, with body and headers **unredacted**. `LoggingInterceptor` logs all requests and responses, in `DEVELOPMENT` only. Every HTTP route carries the global prefix `/v{API_VERSION}` (`main.ts`, `setGlobalPrefix`); route paths elsewhere in this file omit it. The prefix does not apply to Socket.io: the chat namespace stays at `/chat`.
 
 **Auth (`modules/auth`).** `POST auth/sign-up {name, username, email, password}` and `POST auth/sign-in {login, password}` return `{ user, accessToken, refreshToken }`. `login` is treated as an email if it contains `@`, otherwise as a username. `POST auth/refresh` takes the **refresh** token as the Bearer token and returns a new pair. Refresh is stateless: no token storage, rotation tracking, or revocation. The JWT payload is `{ sub: userId }`. Access and refresh tokens are signed with different secrets, so neither works in place of the other. Both Passport strategies (`jwt-access`, `jwt-refresh`) re-load the `User` on every request; `@CurrentUser()` injects that entity. Passwords are hashed with bcrypt at cost 15 (`shared/utils/hash.util.ts`), so sign-up and sign-in take noticeable time.
 
