@@ -9,6 +9,7 @@ import { dataSource } from './shared/config/database.config.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { UserModule } from './modules/user/user.module.js';
 import { CoreModule } from './modules/core/core.module.js';
+import { ChatModule } from './modules/chat/chat.module.js';
 import { JwtAccessGuard } from './common/guards/jwt-access.guard.js';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor.js';
 import { ApiErrorLoggingFilter } from './common/filters/api-error-logging.filter.js';
@@ -25,6 +26,7 @@ import { ApiErrorLoggingFilter } from './common/filters/api-error-logging.filter
     AuthModule,
     UserModule,
     CoreModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [

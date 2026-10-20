@@ -46,6 +46,20 @@ There are currently no tests.
 
 **Users (`modules/user`).** `User` (`users` table): `id` (uuid), `name`, `username`, `email`, `password` (`select: false`; `findForAuth` selects it explicitly), plus timestamps. Usernames and emails are trimmed and lowercased on write and on lookup, so both are unique case-insensitively. Duplicates return 409. `GET users/me` returns the current user.
 
+**Chat (`modules/chat`).**
+- **Tables:** `ChatRoom` (no name), `ChatMember` (room ↔ user, unique pair) and `ChatMessage` (`sender`, `type`: `text` | `photo` | `video`, `status`: `sent` | `read`, `text`, `file*` columns). All routes are under `chat/` and require membership. A non-member gets 404, not 403.
+- **Rooms:** `POST chat/rooms {memberIds}` always adds the creator. Every ID must be an existing user, and there must be at least one other member. There is no dedupe of 1:1 rooms and no add/remove-member route. `GET chat/rooms` is paginated and ordered by `updatedAt`, which is bumped on every message.
+- **Sending:** `POST chat/rooms/:id/messages` takes either JSON `{text}` or multipart with an optional `file` field plus `text` as a caption. The type comes from the mimetype: `image/*` → photo, `video/*` → video, anything else → 400. Files go through multer `diskStorage` into `uploads/chat/<uuid><ext>` (`storage/chat-file.storage.ts` creates the folder on import, and the folder is gitignored), with a 500 MB limit (413 when exceeded). The DB stores the relative path `chat/<file>`. If the handler throws after multer has written the file, the controller deletes it.
+- **Reading:** `GET chat/rooms/:id/messages` is paginated, newest first. As a side effect, it marks the other users' `sent` messages **on the returned page** as `read`. `status` is per message, not per member: in a group, the first member to read a message marks it read for everyone.
+- **Files:** they're never served statically. `GET chat/messages/:id/file` checks membership and then `res.sendFile`s the file, with Range support for video.
+- **Pagination:** `PaginationQuery` (`common/dto`) takes `page` (default 1) and `limit` (default 20, max 100). The response is `{data, total, page, limit, totalPages}`.
+- **Realtime:** Socket.io namespace `/chat` (`ChatGateway`). It authenticates with an access token from `handshake.auth.token` or an `Authorization: Bearer` header; the global HTTP guard doesn't cover it. On connect, a socket joins `user:<id>` and `room:<id>` for each of its rooms. All server→client events are emitted from the HTTP controller after the DB write:
+  - `room`: a new room; the members' sockets are joined to it.
+  - `message`: a new message, sent to everyone in the room, including the sender.
+  - `read`: `{roomId, readerId, messageIds}`.
+
+  There are no client→server events. Sending goes through REST.
+
 **VPN provisioning (`modules/core`, `modules/crypt`, `modules/system`).**
 - `modules/core` owns `POST /connection` (`ConnectionController` → `ConnectionService.connect`). `AppController` only serves the `GET /` health check, which is `@Public()`. `/connection` requires an access token, and the user is the JWT's user (`User.id` is used as the cache key).
 - `CryptService.generateKeys()` creates x25519 keys with Node `crypto` and strips the DER headers to the raw 32-byte base64 keys that WireGuard expects.
